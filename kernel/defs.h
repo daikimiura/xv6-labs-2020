@@ -182,6 +182,7 @@ int             copyin(pagetable_t, char *, uint64, uint64);
 int             copyinstr(pagetable_t, char *, uint64, uint64);
 void            kvmswitch_kernel(void);
 void            kvmswitch(pagetable_t);
+void            vmprint(pagetable_t);
 
 // plic.c
 void            plicinit(void);

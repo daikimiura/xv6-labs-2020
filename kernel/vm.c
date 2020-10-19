@@ -521,3 +521,32 @@ int copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
     return -1;
   }
 }
+
+// traverse page table and print PTEs
+void 
+vmtraverse(pagetable_t pagetable, int level)
+{
+  for (int i = 0; i < 512; i++)
+  {
+    pte_t pte = pagetable[i];
+    if ((pte & PTE_V))
+    {
+      // this PTE points to a lower-level page table.
+      uint64 child = PTE2PA(pte);
+
+      printf("..");
+      for (int j = level; j < 2; j++)
+        printf(" ..");
+      printf("%d: pte %p pa %p\n", i, pte, child);
+
+      if (level != 0)
+        vmtraverse((pagetable_t)child, level - 1);
+    }
+  }
+}
+
+void vmprint(pagetable_t pagetable)
+{
+  printf("page table %p\n", pagetable);
+  vmtraverse(pagetable, 2);
+}
