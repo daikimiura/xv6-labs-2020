@@ -242,6 +242,8 @@ void userinit(void)
 
   p->state = RUNNABLE;
 
+  kvmmapuser(p->pid, p->kpagetable, p->pagetable, p->sz, 0);
+
   release(&p->lock);
 }
 
@@ -253,6 +255,10 @@ int growproc(int n)
   struct proc *p = myproc();
 
   sz = p->sz;
+
+  if (sz + n >= PLIC)
+    return -1;
+
   if (n > 0)
   {
     if ((sz = uvmalloc(p->pagetable, sz, sz + n)) == 0)
@@ -264,6 +270,7 @@ int growproc(int n)
   {
     sz = uvmdealloc(p->pagetable, sz, sz + n);
   }
+  kvmmapuser(p->pid, p->kpagetable, p->pagetable, p->sz + n, p->sz);
   p->sz = sz;
   return 0;
 }
@@ -310,6 +317,8 @@ int fork(void)
   pid = np->pid;
 
   np->state = RUNNABLE;
+
+  kvmmapuser(np->pid, np->kpagetable, np->pagetable, np->sz, 0);
 
   release(&np->lock);
 

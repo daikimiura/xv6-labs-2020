@@ -162,6 +162,7 @@ void            kvminit(void);
 void            kvminithart(void);
 uint64          kvmpa(uint64);
 void            kvmmap(uint64, uint64, uint64, int);
+void            kvmmapuser(int, pagetable_t, pagetable_t, uint64, uint64);
 int             mappages(pagetable_t, uint64, uint64, uint64, int);
 pagetable_t     uvmcreate(void);
 pagetable_t     kvmcreate(void);
@@ -183,6 +184,10 @@ int             copyinstr(pagetable_t, char *, uint64, uint64);
 void            kvmswitch_kernel(void);
 void            kvmswitch(pagetable_t);
 void            vmprint(pagetable_t);
+
+// vmcopyin.c
+int             copyin_new(pagetable_t, char *, uint64, uint64);
+int             copyinstr_new(pagetable_t, char *, uint64, uint64);
 
 // plic.c
 void            plicinit(void);
