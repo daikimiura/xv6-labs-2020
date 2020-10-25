@@ -96,9 +96,15 @@ allocproc(void)
 
   for(p = proc; p < &proc[NPROC]; p++) {
     acquire(&p->lock);
-    if(p->state == UNUSED) {
+    p->is_alarm_available = 0;
+    p->alarm_ticks_passed = 0;
+    p->is_alarm_handler_running = 0;
+    if (p->state == UNUSED)
+    {
       goto found;
-    } else {
+    }
+    else
+    {
       release(&p->lock);
     }
   }
