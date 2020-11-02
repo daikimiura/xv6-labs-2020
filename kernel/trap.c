@@ -16,6 +16,8 @@ void kernelvec();
 
 extern int devintr();
 
+extern int reference_counts[PHYSTOP / PGSIZE]; // vm.c
+
 void
 trapinit(void)
 {
@@ -67,7 +69,32 @@ usertrap(void)
     syscall();
   } else if((which_dev = devintr()) != 0){
     // ok
-  } else {
+  } else if (r_scause() == 15)
+  {
+    uint64 va = r_stval();
+    uint16 flags;
+    pte_t *pte;
+    pte = walk(p->pagetable, va, 0);
+    if (pte != 0 && *pte & PTE_COW)
+    {
+      char *mem = kalloc();
+      if(mem == 0){
+        p->killed = -1;
+      } else {
+        flags = PTE_FLAGS(*pte);
+        va = PGROUNDDOWN(va);
+        memmove(mem, (char *)PTE2PA(*pte), PGSIZE);
+        uvmunmap(p->pagetable, va, 1, 1);
+        if (mappages(p->pagetable, va, PGSIZE, (uint64)mem, flags | PTE_W, 0) != 0){
+          // reference_counts[(uint64)mem / PGSIZE] -= 1;
+          kfree(mem);
+          p->killed = -1;
+        }
+      }
+    }
+  }
+  else
+  {
     printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
     printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
     p->killed = 1;

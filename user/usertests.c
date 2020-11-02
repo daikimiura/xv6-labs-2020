@@ -2523,13 +2523,14 @@ badwrite(char *s)
 void
 badarg(char *s)
 {
-  for(int i = 0; i < 50000; i++){
+  for (int i = 0; i < 50000; i++)
+  {
     char *argv[2];
     argv[0] = (char*)0xffffffff;
     argv[1] = 0;
     exec("echo", argv);
   }
-  
+
   exit(0);
 }
 
