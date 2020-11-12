@@ -1,0 +1,4 @@
+Why are there missing keys with 2 threads, but not with 1 thread? Identify a sequence of events with 2 threads that can lead to a key being missing. Submit your sequence with a short explanation in answers-thread.txt
+
+Assume that two threads (thread A and thread B) insert at the same time.
+Since the process of insert() alternates one line at a time, thread A assigns the value of e->next and then thread B assigns the value to e->next, which causes thread A's assignment to be lost.
