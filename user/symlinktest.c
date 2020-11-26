@@ -19,6 +19,7 @@ static void cleanup(void);
 int
 main(int argc, char *argv[])
 {
+  printf("called\n");
   cleanup();
   testsymlink();
   concur();
@@ -68,7 +69,7 @@ testsymlink(void)
   if(fd1 < 0) fail("failed to open a");
 
   r = symlink("/testsymlink/a", "/testsymlink/b");
-  if(r < 0)
+  if (r < 0)
     fail("symlink b -> a failed");
 
   if(write(fd1, buf, sizeof(buf)) != 4)
@@ -80,7 +81,7 @@ testsymlink(void)
     fail("b isn't a symlink");
 
   fd2 = open("/testsymlink/b", O_RDWR);
-  if(fd2 < 0)
+  if (fd2 < 0)
     fail("failed to open b");
   read(fd2, &c, 1);
   if (c != 'a')
@@ -91,7 +92,7 @@ testsymlink(void)
     fail("Should not be able to open b after deleting a");
 
   r = symlink("/testsymlink/b", "/testsymlink/a");
-  if(r < 0)
+  if (r < 0)
     fail("symlink a -> b failed");
 
   r = open("/testsymlink/b", O_RDWR);
