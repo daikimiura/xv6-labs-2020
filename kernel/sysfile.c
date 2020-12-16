@@ -484,3 +484,20 @@ sys_pipe(void)
   }
   return 0;
 }
+
+uint64
+sys_mmap(void) {
+  struct file *file;
+  int length, prot, flags, offset;
+  uint64 address;
+
+  if (argaddr(0, &address) < 0 || argint(1, &length) < 0 || argint(2, &prot) < 0 || argint(3, &flags) < 0 || argfd(4, 0, &file) < 0 || argint(5, &offset) < 0)
+    return -1;
+  uint64 mapped_address =  mmap(length, prot, flags, file, offset);
+  return mapped_address;
+}
+
+uint64
+sys_munmap(void) {
+  return -1;
+};

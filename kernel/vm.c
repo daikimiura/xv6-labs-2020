@@ -1,10 +1,14 @@
 #include "param.h"
 #include "types.h"
+#include "spinlock.h"
+#include "sleeplock.h"
 #include "memlayout.h"
 #include "elf.h"
 #include "riscv.h"
-#include "defs.h"
 #include "fs.h"
+#include "file.h"
+#include "defs.h"
+#include "proc.h"
 
 /*
  * the kernel's page table.
@@ -14,6 +18,50 @@ pagetable_t kernel_pagetable;
 extern char etext[];  // kernel.ld sets this to end of kernel code.
 
 extern char trampoline[]; // trampoline.S
+
+// mmap returns mapped virtual address, or 0xffffffffffffffff if it fails.
+uint64
+mmap(int length, int prot, int flags, struct file *file, int offset) {
+  struct proc *p = myproc();
+  pagetable_t pgtbl = myproc()->pagetable;
+
+  uint64 addr = 0;
+  for (uint64 i = 0; i < length;)
+  {
+    if(addr + i > MAXVA)
+      return 0xffffffffffffffff;
+    if(walkaddr(pgtbl, addr + i) != 0) {
+      addr = walkaddr(pgtbl, addr + i) + PGSIZE;
+      i = 0;
+      continue;
+    };
+    i += PGSIZE;
+  };
+  int found_empty_vma = 0;
+  for (int i = 0; i < 16; i++)
+  {
+    if (!p->vmas[i].is_valid)
+    {
+      p->vmas[i].is_valid = 1;
+      p->vmas[i].address = addr;
+      p->vmas[i].length = length;
+      p->vmas[i].permissions = prot;
+      p->vmas[i].flags = flags;
+      p->vmas[i].offset = offset;
+      p->vmas[i].file = file;
+
+      // increase the file's reference count so that the structure doesn't disappear when the file is closed
+      filedup(file);
+      found_empty_vma = 1;
+      break;
+    };
+  }
+
+  if(!found_empty_vma)
+    return 0xffffffffffffffff;
+
+  return addr;
+}
 
 // Make a direct-map page table for the kernel.
 pagetable_t
