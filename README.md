@@ -10,6 +10,6 @@ Labs of [2020 MIT 6.S081: Operating System Engineering](https://pdos.csail.mit.e
 - [x] [Lab copy-on-write](https://github.com/daikimiura/xv6-labs-2020/tree/cow)
 - [x] [Lab multithreading](https://github.com/daikimiura/xv6-labs-2020/tree/thread)
 - [x] [Lab lock](https://github.com/daikimiura/xv6-labs-2020/tree/lock)
-- [ ] Lab file system
+- [x] Lab file system (https://github.com/daikimiura/xv6-labs-2020/tree/fs)
 - [ ] Lab mmap
 - [ ] Lab network driver
