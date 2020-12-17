@@ -5,6 +5,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
+#include "fcntl.h"
 
 struct cpu cpus[NCPU];
 
@@ -280,6 +281,15 @@ fork(void)
     release(&np->lock);
     return -1;
   }
+
+  // Copy VMAs from parent to child.
+  for (int i = 0; i < 16; i++){
+    if(p->vmas[i].is_valid) {
+      filedup(p->vmas[i].file);
+      np->vmas[i] = p->vmas[i];
+    }
+  }
+
   np->sz = p->sz;
 
   np->parent = p;
@@ -351,6 +361,19 @@ exit(int status)
       fileclose(f);
       p->ofile[fd] = 0;
     }
+  }
+
+  // ummap all mapped files.
+  for (int i = 0; i < 16; i++)
+  {
+    if (p->vmas[i].is_valid)
+    {
+      if (p->vmas[i].flags & MAP_SHARED)
+        filewrite(p->vmas[i].file, p->vmas[i].address, p->vmas[i].length);
+      uvmunmap(p->pagetable, p->vmas[i].address, p->vmas[i].length / PGSIZE, 1);
+      fileclose(p->vmas[i].file);
+      p->vmas[i].is_valid = 0;
+    };
   }
 
   begin_op();

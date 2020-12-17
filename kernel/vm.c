@@ -9,6 +9,7 @@
 #include "file.h"
 #include "defs.h"
 #include "proc.h"
+#include "fcntl.h"
 
 /*
  * the kernel's page table.
@@ -25,25 +26,45 @@ mmap(int length, int prot, int flags, struct file *file, int offset) {
   struct proc *p = myproc();
   pagetable_t pgtbl = myproc()->pagetable;
 
-  uint64 addr = 0;
-  for (uint64 i = 0; i < length;)
+  if(!file->writable && (prot & PROT_WRITE) && !(flags & MAP_PRIVATE))
+    return 0xffffffffffffffff;
+
+  uint64 addr = MAXVA - 4 * PGSIZE;
+  int npages = length / PGSIZE;
+
+  for (uint64 i = 0; i < npages;)
   {
-    if(addr + i > MAXVA)
+    if (addr < 0)
       return 0xffffffffffffffff;
-    if(walkaddr(pgtbl, addr + i) != 0) {
-      addr = walkaddr(pgtbl, addr + i) + PGSIZE;
+
+    // Not mapped to physical memory, but VMA  have been allocated
+    int vma_used = 0;
+    for (int i = 0; i < 16; i++)
+    {
+      if (p->vmas[i].is_valid && (uint64)p->vmas[i].address <= addr && (uint64)p->vmas[i].address + p->vmas[i].length > addr)
+      {
+        vma_used = 1;
+        break;
+      };
+    }
+
+    uint64 pa = walkaddr(pgtbl, addr - i * PGSIZE);
+    if (vma_used || pa != 0)
+    {
+      addr -= (i + 1) * PGSIZE;
       i = 0;
       continue;
     };
-    i += PGSIZE;
+    i--;
   };
+
   int found_empty_vma = 0;
   for (int i = 0; i < 16; i++)
   {
     if (!p->vmas[i].is_valid)
     {
       p->vmas[i].is_valid = 1;
-      p->vmas[i].address = addr;
+      p->vmas[i].address = addr - (npages-1) * PGSIZE;
       p->vmas[i].length = length;
       p->vmas[i].permissions = prot;
       p->vmas[i].flags = flags;
@@ -60,7 +81,28 @@ mmap(int length, int prot, int flags, struct file *file, int offset) {
   if(!found_empty_vma)
     return 0xffffffffffffffff;
 
-  return addr;
+  printf("mmapped virtual addr: %p\n", addr - (npages-1) * PGSIZE);
+  return addr - (npages-1) * PGSIZE;
+}
+
+int
+munmap(uint64 address, int length) {
+  struct proc *p = myproc();
+
+  for (int i = 0; i < 16; i++)
+  {
+    if (p->vmas[i].is_valid && (uint64)p->vmas[i].address <= address && (uint64)p->vmas[i].address + p->vmas[i].length > address)
+    {
+      if(p->vmas[i].flags & MAP_SHARED)
+        filewrite(p->vmas[i].file, p->vmas[i].address, p->vmas[i].length);
+      uvmunmap(p->pagetable, p->vmas[i].address, length / PGSIZE, 1);
+      fileclose(p->vmas[i].file);
+      p->vmas[i].is_valid = 0;
+      return 0;
+    };
+  }
+
+  return 0;
 }
 
 // Make a direct-map page table for the kernel.
@@ -193,8 +235,10 @@ mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm)
   for(;;){
     if((pte = walk(pagetable, a, 1)) == 0)
       return -1;
-    if(*pte & PTE_V)
+    if(*pte & PTE_V) {
+      printf("va; %p", va);
       panic("remap");
+    }
     *pte = PA2PTE(pa) | perm | PTE_V;
     if(a == last)
       break;

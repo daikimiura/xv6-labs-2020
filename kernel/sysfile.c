@@ -493,11 +493,18 @@ sys_mmap(void) {
 
   if (argaddr(0, &address) < 0 || argint(1, &length) < 0 || argint(2, &prot) < 0 || argint(3, &flags) < 0 || argfd(4, 0, &file) < 0 || argint(5, &offset) < 0)
     return -1;
+
   uint64 mapped_address =  mmap(length, prot, flags, file, offset);
   return mapped_address;
 }
 
 uint64
 sys_munmap(void) {
-  return -1;
+  uint64 address;
+  int length;
+
+  if (argaddr(0, &address) < 0 || argint(1, &length) < 0)
+    return -1;
+ 
+  return (uint64)munmap(address, length);
 };
