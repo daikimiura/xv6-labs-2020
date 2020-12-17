@@ -71,10 +71,12 @@ void usertrap(void)
   else if (r_scause() == 13)
   {
     uint64 va = r_stval();
+    int vma_found = 0;
     for (int i = 0; i < 16; i++)
     {
       if (p->vmas[i].is_valid && (uint64)p->vmas[i].address <= va && (uint64)p->vmas[i].address + p->vmas[i].length > va)
       {
+        vma_found = 1;
         char *mem = kalloc();
         if (mem == 0)
         {
@@ -105,6 +107,12 @@ void usertrap(void)
           iunlock(p->vmas[i].file->ip);
         }
       }
+    }
+
+    if(!vma_found) {
+      printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
+      printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
+      p->killed = 1;
     }
   }
   else if ((which_dev = devintr()) != 0)
