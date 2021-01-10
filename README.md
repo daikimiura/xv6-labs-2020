@@ -12,4 +12,4 @@ Labs of [2020 MIT 6.S081: Operating System Engineering](https://pdos.csail.mit.e
 - [x] [Lab lock](https://github.com/daikimiura/xv6-labs-2020/tree/lock)
 - [x] [Lab file system](https://github.com/daikimiura/xv6-labs-2020/tree/fs)
 - [x] [Lab mmap](https://github.com/daikimiura/xv6-labs-2020/tree/mmap)
-- [ ] Lab network driver
+- [x] [Lab network driver](https://github.com/daikimiura/xv6-labs-2020/tree/net)
